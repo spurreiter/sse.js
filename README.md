@@ -38,6 +38,28 @@ es.onmessage = function (event) {
 };
 ```
 
+### Options
+
+
+```js
+var sse = new SSE(server, {
+  path          : '/sse',   // path for sse
+  verifyRequest : null,     // verifies request
+  cors          : false     // CORS
+})
+```
+
+- __path__: (default: `/sse`) - sse path at server
+- __verifyRequest__: (default: `null`) - allows request inspection, e.g. for 
+  authentication   
+  `function (req) {}` should return a boolean.
+- __cors__: (default: `false`) - add CORS header   
+  if `true` req.headers.origin is retured  
+  if "typeof string" then this string is returned  
+  if "typeof function" then result of `function (req) {}` is used.   
+  This function should return a string.
+
+
 ## License ##
 
 (The MIT License)

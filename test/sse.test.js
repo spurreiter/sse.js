@@ -164,14 +164,14 @@ describe('SSE', function() {
           request('http://localhost:' + port + '/sse', function(res) {
             res.on('end', function() {
               server.close();
-              done();              
+              done();
             });
           });
-        });        
+        });
       });
     });
   });
-  
+
   describe('#send', function() {
     describe('with special characters in data', function() {
       it('sends a message with CR over several data directives', function(done) {
@@ -416,4 +416,107 @@ describe('SSE', function() {
     });
 
   });
+
+  describe('cors option', function () {
+    describe('as boolean', function () {
+      it('should set on origin header', function () {
+        var server = listen(++port, function() {
+          var sse = new SSE(server, { cors: true });
+          var headers = { origin: 'http://example.com'}
+          var cb = function(res) {
+            server.close();
+            expect(res.headers).to.have.property('access-control-allow-origin')
+            expect(res.headers['access-control-allow-origin']).to.eql('http://example.com')
+            done();
+          }
+          request('http://localhost:' + port + '/sse', cb, headers);
+        });
+      })
+      it('should not set on missing origin header', function () {
+        var server = listen(++port, function() {
+          var sse = new SSE(server, { cors: true });
+          var headers = {}
+          var cb = function(res) {
+            server.close();
+            expect(res.headers).to.not.have.property('access-control-allow-origin')
+            done();
+          }
+          request('http://localhost:' + port + '/sse', cb, headers);
+        });
+      })
+    })
+    describe('as string', function () {
+      it('should set on matching origin header', function () {
+        var server = listen(++port, function() {
+          var sse = new SSE(server, { cors: 'http://example.com' });
+          var headers = { origin: 'http://example.com' }
+          var cb = function(res) {
+            server.close();
+            expect(res.headers).to.have.property('access-control-allow-origin')
+            expect(res.headers['access-control-allow-origin']).to.eql('http://example.com')
+            done();
+          }
+          request('http://localhost:' + port + '/sse', cb, headers);
+        });
+      })
+      it('should not set on not matching origin header', function () {
+        var server = listen(++port, function() {
+          var sse = new SSE(server, { cors: 'http://example.com' });
+          var headers = { origin: 'http://www.example.com' }
+          var cb = function(res) {
+            server.close();
+            expect(res.headers).to.not.have.property('access-control-allow-origin')
+            done();
+          }
+          request('http://localhost:' + port + '/sse', cb, headers);
+        });
+      })
+    })
+    describe('as function', function () {
+      var cors = function (req) {
+        const orgin = req.headers.origin
+        if (/^https?:\/\/(www\.)?example.com/.test(origin)) {
+          return origin
+        }
+      }
+      it('should set on origin header', function () {
+        var server = listen(++port, function() {
+          var sse = new SSE(server, { cors: cors });
+          var headers = { origin: 'http://example.com' }
+          var cb = function(res) {
+            server.close();
+            expect(res.headers).to.have.property('access-control-allow-origin')
+            expect(res.headers['access-control-allow-origin']).to.eql('http://example.com')
+            done();
+          }
+          request('http://localhost:' + port + '/sse', cb, headers);
+        });
+      })
+      it('should not set on matching origin header', function () {
+        var server = listen(++port, function() {
+          var sse = new SSE(server, { cors: cors });
+          var headers = { origin: 'http://www.example.com' }
+          var cb = function(res) {
+            server.close();
+            expect(res.headers).to.have.property('access-control-allow-origin')
+            expect(res.headers['access-control-allow-origin']).to.eql('http://example.com')
+            done();
+          }
+          request('http://localhost:' + port + '/sse', cb, headers);
+        });
+      })
+      it('should not set on not matching origin header', function () {
+        var server = listen(++port, function() {
+          var sse = new SSE(server, { cors: cors });
+          var headers = { origin: 'http://aaa.example.com' }
+          var cb = function(res) {
+            server.close();
+            expect(res.headers).to.not.have.property('access-control-allow-origin')
+            done();
+          }
+          request('http://localhost:' + port + '/sse', cb, headers);
+        });
+      })
+    })
+  })
 });
